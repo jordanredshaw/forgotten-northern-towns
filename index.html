@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Forgotten Northern Towns</title>
+<style>
+  :root{
+    --bg:#faf8f4; --panel:#ffffff;
+    --ink:#2b2620; --muted:#8a8375; --mustard:#a97e14; --mustard-bright:#e3b23c;
+    --green:#44803f; --red:#bf4636; --line:#e2dcd0; --purple:#7a5ea0;
+    font-size:16px;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:Georgia,'Times New Roman',serif;
+    min-height:100vh; display:flex; flex-direction:column; align-items:center;
+    padding:1rem 1rem 3rem;
+    background-image:radial-gradient(ellipse at 50% -10%, #ffffff 0%, var(--bg) 60%);
+  }
+  header{text-align:center; margin:.75rem 0 1.25rem; max-width:44rem;}
+  h1{
+    font-size:clamp(1.6rem,5.5vw,2.6rem); letter-spacing:.02em;
+    color:var(--mustard); text-transform:uppercase; font-weight:700;
+  }
+  h1 .flourish{color:var(--muted); font-size:.6em; display:block; letter-spacing:.35em; margin-top:.2rem; text-transform:uppercase; font-family:Verdana,sans-serif;}
+  .tagline{color:var(--muted); font-style:italic; margin-top:.5rem; font-size:.95rem;}
+
+  .scorebar{
+    display:flex; gap:.6rem; flex-wrap:wrap; justify-content:center;
+    margin-bottom:1.25rem; font-family:Verdana,sans-serif; font-size:.8rem;
+  }
+  .scorebar .pill{
+    background:var(--panel); border:1px solid var(--line); border-radius:2rem;
+    padding:.35rem .9rem; color:var(--muted);
+  }
+  .scorebar .pill b{color:var(--ink); font-size:.95rem;}
+
+  .question{
+    font-size:clamp(1rem,3.5vw,1.25rem); text-align:center; margin-bottom:1rem;
+    max-width:34rem;
+  }
+  .cards{
+    display:flex; gap:.8rem; width:100%; max-width:44rem;
+  }
+  .town-btn{
+    flex:1 1 0; min-height:7.5rem; padding:1rem .75rem; cursor:pointer;
+    background:var(--panel); color:var(--ink); border:2px solid var(--line);
+    border-radius:.75rem; font-family:inherit; font-size:clamp(1.1rem,4.2vw,1.6rem);
+    line-height:1.2; transition:transform .08s, border-color .15s, background .15s;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.5rem;
+    box-shadow:0 1px 3px rgba(60,50,30,.08);
+  }
+  .town-btn:hover:not(:disabled){border-color:var(--mustard-bright); transform:translateY(-2px);}
+  .town-btn:active:not(:disabled){transform:translateY(1px);}
+  .town-btn:disabled{cursor:default; opacity:.55;}
+  .town-btn.picked-right{border-color:var(--green); opacity:1; background:#e9f3e5;}
+  .town-btn.picked-wrong{border-color:var(--red); opacity:1; background:#fbe9e4;}
+  .town-btn.was-real{border-color:var(--green); opacity:1;}
+  .town-btn{position:relative;}
+  .town-btn.chosen::after{
+    content:"YOUR PICK"; position:absolute; top:-.7rem; left:50%; transform:translateX(-50%);
+    font-family:Verdana,sans-serif; font-size:.6rem; font-weight:700; letter-spacing:.15em;
+    background:var(--mustard-bright); color:#241d0d; padding:.2rem .6rem; border-radius:1rem;
+    white-space:nowrap;
+  }
+  .town-btn.picked-wrong.chosen::after{background:var(--red); color:#fff;}
+
+  .verdict{
+    margin:1.1rem auto .9rem; text-align:center; font-family:Verdana,sans-serif;
+    font-weight:700; font-size:clamp(1.1rem,4.5vw,1.5rem); letter-spacing:.03em;
+    display:none;
+  }
+  .verdict.right{color:var(--green); display:block;}
+  .verdict.wrong{color:var(--red); display:block;}
+  .verdict .sub{display:block; font-weight:400; font-size:.75rem; color:var(--muted); margin-top:.3rem; letter-spacing:.1em;}
+
+  .reveal{width:100%; max-width:44rem; display:none; flex-direction:column; gap:.9rem;}
+  .reveal.open{display:flex;}
+  .card{
+    background:var(--panel); border:1px solid var(--line); border-radius:.75rem;
+    overflow:hidden;
+  }
+  .card .photo{
+    width:100%; aspect-ratio:16/7; background:#ece7dd; display:flex;
+    align-items:center; justify-content:center; overflow:hidden; position:relative;
+  }
+  .card .photo img{width:100%; height:100%; object-fit:cover; display:block;}
+  .card .photo .placeholder{
+    font-size:2.4rem; color:var(--muted); display:flex; flex-direction:column;
+    align-items:center; gap:.3rem;
+  }
+  .card .photo .placeholder span{font-size:.7rem; font-family:Verdana,sans-serif; letter-spacing:.15em; text-transform:uppercase;}
+  .card .body{padding:1rem 1.1rem 1.2rem;}
+  .card h2{font-size:1.35rem; color:var(--mustard); margin-bottom:.1rem;}
+  .card .county{font-family:Verdana,sans-serif; font-size:.68rem; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); margin-bottom:.7rem;}
+  .card p{line-height:1.55; font-size:.98rem;}
+  .card.impostor{border-style:dashed; border-color:var(--purple); background:#faf7ff;}
+  .card.impostor h2{color:var(--purple);}
+  .card.impostor .stamp{
+    font-family:Verdana,sans-serif; font-size:.65rem; letter-spacing:.2em;
+    text-transform:uppercase; color:var(--purple); border:1px dashed var(--purple);
+    display:inline-block; padding:.2rem .55rem; border-radius:.3rem; margin-bottom:.7rem;
+  }
+  .credit{font-family:Verdana,sans-serif; font-size:.6rem; color:var(--muted); text-align:right; padding:.35rem .6rem 0; opacity:.7;}
+
+  .next-btn{
+    margin:1.1rem auto 0; display:none; cursor:pointer;
+    background:var(--mustard-bright); color:#241d0d; border:none; border-radius:2rem;
+    font-family:Verdana,sans-serif; font-weight:700; font-size:.95rem;
+    padding:.85rem 2.2rem; letter-spacing:.05em;
+  }
+  .next-btn:hover{filter:brightness(1.08);}
+  .reveal.open ~ .next-btn, .next-btn.show{display:block;}
+  footer{margin-top:2.5rem; color:var(--muted); font-size:.72rem; font-family:Verdana,sans-serif; text-align:center; line-height:1.8;}
+  @media (max-width:430px){
+    .cards{gap:.5rem;}
+    .town-btn{min-height:6.5rem; padding:.8rem .4rem;}
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Forgotten Northern Towns<span class="flourish">a quiz of grit &amp; drizzle</span></h1>
+  <p class="tagline">One of these towns is real and unfairly forgotten. The other is a lie.</p>
+</header>
+
+<div class="scorebar">
+  <div class="pill">Score <b id="score">0/0</b></div>
+  <div class="pill">Streak <b id="streak">0</b></div>
+  <div class="pill">Best streak <b id="best">0</b></div>
+</div>
+
+<p class="question" id="question">Which one actually exists?</p>
+
+<div class="cards">
+  <button class="town-btn" id="btnA"><span></span></button>
+  <button class="town-btn" id="btnB"><span></span></button>
+</div>
+
+<div class="verdict" id="verdict"></div>
+
+<div class="reveal" id="reveal">
+  <div class="card" id="realCard">
+    <div class="photo" id="photoBox">
+      <div class="placeholder">🏭<span>fetching t' photo…</span></div>
+    </div>
+    <div class="body">
+      <h2 id="realName"></h2>
+      <div class="county" id="realCounty"></div>
+      <p id="realBlurb"></p>
+      <div class="credit" id="photoCredit"></div>
+    </div>
+  </div>
+  <div class="card impostor" id="fakeCard">
+    <div class="body">
+      <h2 id="fakeName"></h2>
+      <div class="stamp">Does not exist · Population 0 · Never did</div>
+      <p id="fakeBlurb"></p>
+    </div>
+  </div>
+</div>
+
+<button class="next-btn" id="nextBtn">Next town, please →</button>
+
+<footer>
+  Photos fetched live from Wikipedia (so blame them, not us).<br>
+  All fictional towns are fictional. The real ones have suffered enough.
+</footer>
+
+<script>
+  // GoatCounter analytics. Set to your site code (the bit before .goatcounter.com);
+  // leave the placeholder to disable tracking entirely. Localhost is never counted.
+  window.GOATCOUNTER_CODE = 'YOUR-GOATCOUNTER-CODE';
+</script>
+<script src="real-towns.js"></script>
+<script src="fake-towns.js"></script>
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const btnA = $('btnA'), btnB = $('btnB'), verdict = $('verdict'),
+        reveal = $('reveal'), nextBtn = $('nextBtn');
+
+  const RIGHT_LINES = [
+    "REET GOOD!", "CHAMPION!", "PROPER JOB!", "AYE, THAT'S THE ONE!",
+    "GOOD LAD/LASS!", "BY 'ECK, CORRECT!", "SPOT ON, COCKER!", "NICE ONE, CHUCK!"
+  ];
+  const WRONG_LINES = [
+    "WRONG, LOVE.", "NOT EVEN CLOSE, PET.", "OOH, UNLUCKY CHUCK.",
+    "NAY LAD, NAY.", "THAT TOWN IS A FIB.", "YOU'VE BEEN HAD, FLOWER.",
+    "AWAY WI' YE, THAT'S MADE UP.", "SIT DOWN AND THINK ON."
+  ];
+  const RIGHT_SUBS = [
+    "You can smell a real chip shop from here.",
+    "Somewhere, a whippet nods approvingly.",
+    "Your flat cap privileges are renewed.",
+    "The brass band plays in your honour.",
+    "Tea's mashed. You've earned it."
+  ];
+  const WRONG_SUBS = [
+    "You fell for a town that has never known rain.",
+    "No pit, no chippy, no pigeons. It was never real.",
+    "An imaginary town thanks you for your trust.",
+    "Even the fictional pigeons are laughing.",
+    "Don't worry — the real one forgives you. Probably."
+  ];
+
+  // ---- analytics (GoatCounter custom events; no-ops without a site code) ----
+  const GC = window.GOATCOUNTER_CODE;
+  const analyticsOn = GC && GC !== 'YOUR-GOATCOUNTER-CODE';
+  const gcQueue = [];
+  function track(name){
+    if(!analyticsOn) return;
+    if(window.goatcounter && window.goatcounter.count){
+      window.goatcounter.count({path: name, event: true});
+    } else {
+      gcQueue.push(name);
+    }
+  }
+  if(analyticsOn){
+    const s = document.createElement('script');
+    s.async = true;
+    s.src = 'https://gc.zgo.at/count.js';
+    s.dataset.goatcounter = 'https://' + GC + '.goatcounter.com/count';
+    s.addEventListener('load', () => {
+      gcQueue.splice(0).forEach(n => window.goatcounter.count({path: n, event: true}));
+    });
+    document.body.appendChild(s);
+  }
+  try{
+    track(localStorage.getItem('fnt-seen') ? 'returning-player' : 'new-player');
+    localStorage.setItem('fnt-seen', '1');
+  }catch(e){}
+  [[60,'time-1min'],[300,'time-5min'],[600,'time-10min']]
+    .forEach(([sec,name]) => setTimeout(() => track(name), sec*1000));
+
+  function shuffle(a){
+    for(let i=a.length-1;i>0;i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [a[i],a[j]]=[a[j],a[i]];
+    }
+    return a;
+  }
+  const pick = a => a[Math.floor(Math.random()*a.length)];
+
+  let realDeck = shuffle(REAL_TOWNS.slice());
+  let fakeDeck = shuffle(FAKE_TOWNS.slice());
+  let realIdx = 0, fakeIdx = 0;
+  let current = null;
+  let score = 0, total = 0, streak = 0;
+  let best = parseInt(localStorage.getItem('fnt-best')||'0',10);
+
+  function updateBar(){
+    $('score').textContent = score + '/' + total;
+    $('streak').textContent = streak;
+    $('best').textContent = best;
+  }
+
+  function nextRound(){
+    if(realIdx >= realDeck.length){ realDeck = shuffle(realDeck); realIdx = 0; }
+    if(fakeIdx >= fakeDeck.length){ fakeDeck = shuffle(fakeDeck); fakeIdx = 0; }
+    const real = realDeck[realIdx++], fake = fakeDeck[fakeIdx++];
+    const realOnLeft = Math.random() < 0.5;
+    current = { real, fake, realBtn: realOnLeft ? btnA : btnB };
+
+    for(const b of [btnA, btnB]){
+      b.disabled = false;
+      b.classList.remove('picked-right','picked-wrong','was-real','chosen');
+    }
+    btnA.querySelector('span').textContent = realOnLeft ? real.name : fake.name;
+    btnB.querySelector('span').textContent = realOnLeft ? fake.name : real.name;
+    verdict.className = 'verdict';
+    reveal.classList.remove('open');
+    nextBtn.classList.remove('show');
+    resetPhoto();
+  }
+
+  function resetPhoto(){
+    $('photoBox').innerHTML = '<div class="placeholder">🏭<span>fetching t’ photo…</span></div>';
+    $('photoCredit').textContent = '';
+  }
+
+  function showPhoto(town){
+    const box = $('photoBox');
+    fetch('https://en.wikipedia.org/api/rest_v1/page/summary/' + encodeURIComponent(town.wiki))
+      .then(r => r.ok ? r.json() : Promise.reject())
+      .then(j => {
+        const src = (j.originalimage && j.originalimage.source) || (j.thumbnail && j.thumbnail.source);
+        if(!src) throw new Error('no image');
+        const img = new Image();
+        img.alt = town.name;
+        img.onload = () => { box.innerHTML=''; box.appendChild(img); $('photoCredit').textContent = 'Photo via Wikipedia'; };
+        img.onerror = () => noPhoto(town);
+        img.src = src;
+      })
+      .catch(() => noPhoto(town));
+  }
+  function noPhoto(town){
+    $('photoBox').innerHTML = '<div class="placeholder">🏚️<span>so forgotten, even Wikipedia has no photo</span></div>';
+  }
+
+  function choose(btn){
+    if(!current || btn.disabled) return;
+    btnA.disabled = btnB.disabled = true;
+    const correct = btn === current.realBtn;
+    total++;
+    track(correct ? 'answer-right' : 'answer-wrong');
+    if(!correct) track('fooled-by-' + current.fake.name.toLowerCase().replace(/[^a-z0-9]+/g,'-'));
+    if(total === 10 || total === 25 || total === 50) track('rounds-' + total);
+    btn.classList.add('chosen');
+    if(correct){
+      score++; streak++;
+      if(streak > best){ best = streak; localStorage.setItem('fnt-best', String(best)); }
+      btn.classList.add('picked-right');
+      verdict.className = 'verdict right';
+      verdict.innerHTML = pick(RIGHT_LINES) + '<span class="sub">You picked ' + current.real.name + '. ' + pick(RIGHT_SUBS) + '</span>';
+    } else {
+      streak = 0;
+      btn.classList.add('picked-wrong');
+      current.realBtn.classList.add('was-real');
+      verdict.className = 'verdict wrong';
+      verdict.innerHTML = pick(WRONG_LINES) + '<span class="sub">You picked ' + current.fake.name + '. ' + pick(WRONG_SUBS) + '</span>';
+    }
+    updateBar();
+
+    // Reveal only the card for the town they actually picked.
+    $('realCard').style.display = correct ? '' : 'none';
+    $('fakeCard').style.display = correct ? 'none' : '';
+    if(correct){
+      $('realName').textContent = current.real.name;
+      $('realCounty').textContent = current.real.county + ' · verifiably real';
+      $('realBlurb').textContent = current.real.blurb;
+      showPhoto(current.real);
+    } else {
+      $('fakeName').textContent = current.fake.name;
+      $('fakeBlurb').textContent = current.fake.blurb;
+    }
+
+    reveal.classList.add('open');
+    nextBtn.classList.add('show');
+    setTimeout(() => verdict.scrollIntoView({behavior:'smooth', block:'nearest'}), 60);
+  }
+
+  btnA.addEventListener('click', () => choose(btnA));
+  btnB.addEventListener('click', () => choose(btnB));
+  nextBtn.addEventListener('click', () => { nextRound(); window.scrollTo({top:0, behavior:'smooth'}); });
+
+  updateBar();
+  nextRound();
+})();
+</script>
+</body>
+</html>
